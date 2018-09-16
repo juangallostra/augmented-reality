@@ -1,6 +1,17 @@
 # augmented-reality
 Augmented reality card based application with Python, numpy and OpenCV
 
+# Usage
+
+# Troubleshooting
+
+# Explanation
+
+See this blog entries for an in-depth explanation of the logic behind the code:
+
+* [Part 1](https://bitesofcode.wordpress.com/2017/09/12/augmented-reality-with-python-and-opencv-part-1/)
+* [Part 2](https://bitesofcode.wordpress.com/2018/09/16/augmented-reality-with-python-and-opencv-part-2/)
+
 # Results
 
 * [Mix](https://www.youtube.com/watch?v=YVJSFcUbIoU)
