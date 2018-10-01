@@ -16,14 +16,15 @@ Augmented reality card based application with Python, numpy and OpenCV
 
 ## Troubleshooting
 
-If you get the message:
+**If you get the message**:
 
 ```
 Unable to capture video
 ```
 printed to your terminal, the most likely cause is that your OpenCV installation has been compiled without FFMPEG support. Pre-built OpenCV packages such as the ones downloaded via pip are not compiled with FFMPEG support, which means that you have to build it manually.
 
-If you get the error:
+**If you get the error**:
+
 ```
 Traceback (most recent call last):
 File "src/ar_main.py", line 174, in
