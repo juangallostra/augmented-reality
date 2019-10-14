@@ -6,6 +6,7 @@ class KalmanTracker():
     """
 
     def __init__(self):
+        # Variables to store state of the Kalman filter
         self.x = None # State
         self.z = None # Measurements
         self.A = None # Process model
@@ -14,6 +15,9 @@ class KalmanTracker():
         self.Q = None # Process noise
         self.R = None # Measurament noise
         self.K = None # Kalman gain
+        pass
+
+    def reset(self):
         pass
 
     def __project_state(self):
