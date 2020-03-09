@@ -45,7 +45,7 @@ def main():
         # read the current frame
         ret, frame = cap.read()
         if not ret:
-            print "Unable to capture video"
+            print ("Unable to capture video")
             return 
         # find and draw the keypoints of the frame
         kp_frame, des_frame = orb.detectAndCompute(frame, None)
