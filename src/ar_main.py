@@ -32,7 +32,7 @@ def main():
     # create BFMatcher object based on hamming distance  
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     # load the reference surface that will be searched in the video stream
-    dir_name = os.getcwd()
+    dir_name = os.getcwd() + '/../'
     model = cv2.imread(os.path.join(dir_name, 'reference/model.jpg'), 0)
     # Compute model keypoints and its descriptors
     kp_model, des_model = orb.detectAndCompute(model, None)
@@ -89,7 +89,7 @@ def main():
                 break
 
         else:
-            print "Not enough matches found - %d/%d" % (len(matches), MIN_MATCHES)
+            print ("Not enough matches found - %d/%d" % (len(matches), MIN_MATCHES))
 
     cap.release()
     cv2.destroyAllWindows()
