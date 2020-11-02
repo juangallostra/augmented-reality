@@ -37,9 +37,10 @@ def main():
     # Compute model keypoints and its descriptors
     kp_model, des_model = orb.detectAndCompute(model, None)
     # Load 3D model from OBJ file
-    obj = OBJ(os.path.join(dir_name, '../models/fox.obj'), swapyz=False)  
+    obj = OBJ(os.path.join(dir_name, '../models/fox.obj'), swapyz=True)  
     # init video capture
     cap = cv2.VideoCapture(0)
+    # Resize Window in real-time 
     cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
 
     while True:
@@ -63,6 +64,7 @@ def main():
             src_pts = np.float32([kp_model[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
             dst_pts = np.float32([kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
             # compute Homography
+            # Taking top 6 points for better tracking
             homography, mask = cv2.findHomography(src_pts[:6], dst_pts[:6], cv2.RANSAC, 10.0)
             if args.rectangle:
                 # Draw a rectangle that marks the found model in the frame
@@ -175,4 +177,4 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     main()
-
+    
