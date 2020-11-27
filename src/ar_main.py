@@ -17,7 +17,8 @@ from objloader_simple import *
 
 # Minimum number of matches that have to be found
 # to consider the recognition valid
-MIN_MATCHES = 10  
+MIN_MATCHES = 10
+DEFAULT_COLOR = (0, 0, 0)
 
 
 def main():
@@ -113,7 +114,7 @@ def render(img, obj, projection, model, color=False):
         dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
         imgpts = np.int32(dst)
         if color is False:
-            cv2.fillConvexPoly(img, imgpts, (137, 27, 211))
+            cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
         else:
             color = hex_to_rgb(face[-1])
             color = color[::-1]  # reverse
