@@ -1,6 +1,9 @@
 # augmented-reality
 Augmented reality card based application with Python, numpy and OpenCV
 
+
+<img src="models/demo.gif" alt="AR Demo" width="500">
+
 ## Usage
 
 * Place the image of the surface to be tracked inside the `reference` folder.

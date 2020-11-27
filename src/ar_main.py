@@ -27,20 +27,22 @@ def main():
     """
     homography = None 
     # matrix of camera parameters (made up but works quite well for me) 
-    camera_parameters = np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]])
+    camera_parameters = np.array([[800, 0, 510], [0, 800, 1093], [0, 0, 1]])
     # create ORB keypoint detector
     orb = cv2.ORB_create()
     # create BFMatcher object based on hamming distance  
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    # load the reference surface that will be searched in the video stream
+    # load the reference surface that will be searched in the video stream												
     dir_name = os.getcwd()
-    model = cv2.imread(os.path.join(dir_name, 'reference/model.jpg'), 0)
+    model = cv2.imread(os.path.join(dir_name, 'reference/ref_model_img.jpg'), 0)
     # Compute model keypoints and its descriptors
     kp_model, des_model = orb.detectAndCompute(model, None)
     # Load 3D model from OBJ file
-    obj = OBJ(os.path.join(dir_name, 'models/fox.obj'), swapyz=True)  
+    obj = OBJ(os.path.join(dir_name, '../models/fox.obj'), swapyz=True)  
     # init video capture
     cap = cv2.VideoCapture(0)
+    # Resize Window in real-time 
+    cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
 
     while True:
         # read the current frame
@@ -48,6 +50,7 @@ def main():
         if not ret:
             print("Unable to capture video")
             return 
+
         # find and draw the keypoints of the frame
         kp_frame, des_frame = orb.detectAndCompute(frame, None)
         # match frame descriptors with model descriptors
@@ -62,7 +65,8 @@ def main():
             src_pts = np.float32([kp_model[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
             dst_pts = np.float32([kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
             # compute Homography
-            homography, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            # Taking top 6 points for better tracking
+            homography, mask = cv2.findHomography(src_pts[:6], dst_pts[:6], cv2.RANSAC, 10.0)
             if args.rectangle:
                 # Draw a rectangle that marks the found model in the frame
                 h, w = model.shape
@@ -149,6 +153,7 @@ def projection_matrix(camera_parameters, homography):
     projection = np.stack((rot_1, rot_2, rot_3, translation)).T
     return np.dot(camera_parameters, projection)
 
+
 def hex_to_rgb(hex_color):
     """
     Helper function to convert hex strings to RGB
@@ -173,3 +178,4 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     main()
+    
