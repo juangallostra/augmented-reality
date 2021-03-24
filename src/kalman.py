@@ -1,36 +1,54 @@
 import numpy as np
+from dataclasses import dataclass
 
+@dataclass
+class KalmanSettings:
+    """Class for keeping the initial values of the system"""
+    A: np.ndarray
+    H: np.ndarray
+    Q: np.ndarray
+    R: np.ndarray
 
 class KalmanTracker():
     """
     As a first test, track the four corners of the reference surface.
     This means that we have 16 states (2 pos, 2 vels for each corner)
     Dimensions are then:
-    x -> 16 x 1
-    z -> 8 x 1
-    A -> 16 x 16 
-    H -> 8 x 16
-    P -> 16 x 16
-    Q -> 16 x 16
-    R -> 8 x 8
-    K -> 16 x 8
+    x -> 16 x 1 (States)
+    z -> 8 x 1 (Observations)
+    A -> 16 x 16 (State transition model)
+    H -> 8 x 16 (Observation model)
+    P -> 16 x 16 (Error covariance)
+    Q -> 16 x 16 (Process noise covariance)
+    R -> 8 x 8 (Observation noise covariance)
+    K -> 16 x 8 (Kalman Gain)
     """
 
     def __init__(self, A, H, Q, R):
-        # Variables to store state of the Kalman filter
+        # Variables to store current state of the Kalman filter
         self.x = None  # State
         self.P = None  # Prediced noise
-        # self.z = None  # Measurements
+        # self.z = None  # Measurements -- Observations are not required as part of the state
         self.A = A  # Process model
         self.H = H  # Measurement model
         self.Q = Q  # Process noise
         self.R = R  # Measurament noise
         self.K = None  # Kalman gain
+        self.original_state = KalmanSettings(A, H, Q, R)
+
+    def __load_original_settings(self):
+        self.A = self.original_state.A
+        self.H = self.original_state.H
+        self.Q = self.original_state.Q
+        self.R = self.original_state.R
 
     def reset(self, x, P):
+        """Reset filter"""
         self.init(x, P)
+        self._load_original_settings()
 
     def init(self, x, P):
+        """Initial system state"""
         self.x = x
         self.P = P
 

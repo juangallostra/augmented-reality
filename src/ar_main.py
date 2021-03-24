@@ -18,8 +18,19 @@ from objloader_simple import *
 # Minimum number of matches that have to be found
 # to consider the recognition valid
 MIN_MATCHES = 10
+PERCENT = 50
 DEFAULT_COLOR = (0, 0, 0)
 
+def rescale_frame(frame, percent=100):
+    """
+    Scale a frame by a given percentage
+    """
+    if percent==100:
+        return frame
+    width = int(frame.shape[1] * percent/ 100)
+    height = int(frame.shape[0] * percent/ 100)
+    dim = (width, height)
+    return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
 
 def main():
     """
@@ -40,11 +51,13 @@ def main():
     # Load 3D model from OBJ file
     obj = OBJ(os.path.join(dir_name, 'models/fox.obj'), swapyz=True)  
     # init video capture
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0) # From camera
+    cap = cv2.VideoCapture('IMG_5609.mp4') # From video
 
     while True:
         # read the current frame
         ret, frame = cap.read()
+        frame = rescale_frame(frame, percent=PERCENT)
         if not ret:
             print("Unable to capture video")
             return 
