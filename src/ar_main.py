@@ -15,11 +15,14 @@ import math
 import os
 from objloader_simple import *
 
+from kalman import KalmanTracker
+
 # Minimum number of matches that have to be found
 # to consider the recognition valid
 MIN_MATCHES = 10
 PERCENT = 50
 DEFAULT_COLOR = (0, 0, 0)
+
 
 def rescale_frame(frame, percent=100):
     """
@@ -36,6 +39,7 @@ def main():
     """
     This functions loads the target surface image,
     """
+    kalman_filter = KalmanTracker()
     homography = None 
     # matrix of camera parameters (made up but works quite well for me) 
     camera_parameters = np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]])

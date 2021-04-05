@@ -1,5 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 
 @dataclass
 class KalmanSettings:
@@ -9,23 +10,14 @@ class KalmanSettings:
     Q: np.ndarray
     R: np.ndarray
 
-class KalmanTracker():
+
+class KalmanFilter(ABC):
     """
-    As a first test, track the four corners of the reference surface.
-    This means that we have 16 states (2 pos, 2 vels for each corner)
-    Dimensions are then:
-    x -> 16 x 1 (States)
-    z -> 8 x 1 (Observations)
-    A -> 16 x 16 (State transition model)
-    H -> 8 x 16 (Observation model)
-    P -> 16 x 16 (Error covariance)
-    Q -> 16 x 16 (Process noise covariance)
-    R -> 8 x 8 (Observation noise covariance)
-    K -> 16 x 8 (Kalman Gain)
+    Generic Kalman Filter implementation
     """
 
     def __init__(self, A, H, Q, R):
-        # Variables to store current state of the Kalman filter
+        # Variables to store the current state of the Kalman filter
         self.x = None  # State
         self.P = None  # Prediced noise
         # self.z = None  # Measurements -- Observations are not required as part of the state
@@ -35,6 +27,22 @@ class KalmanTracker():
         self.R = R  # Measurament noise
         self.K = None  # Kalman gain
         self.original_state = KalmanSettings(A, H, Q, R)
+
+    @abstractmethod
+    def get_A(self):
+        pass
+
+    @abstractmethod
+    def get_H(self):
+        pass
+
+    @abstractmethod
+    def get_Q(self):
+        pass
+
+    @abstractmethod
+    def get_R(self):
+        pass
 
     def __load_original_settings(self):
         self.A = self.original_state.A
@@ -52,8 +60,12 @@ class KalmanTracker():
         self.x = x
         self.P = P
 
-    def __update_models(self, deltat):
+    def __update_models_and_noise(self, deltat):
         """ If any of the models has to be updated from some data, do it here"""
+        self.A = self.get_A(deltat)
+        self.H = self.get_H()
+        self.Q = self.get_Q()
+        self.R = self.get_R()
 
     def __project_state(self):
         """ x_k = A*x_(k-1) + B*u_k"""
@@ -97,7 +109,7 @@ class KalmanTracker():
 
     def predict(self, deltat):
         """ Prediction step """
-        self.__update_models(deltat)
+        self.__update_models_and_noise(deltat)
         self.__project_state()
         self.__project_covariance()
 
@@ -106,3 +118,33 @@ class KalmanTracker():
         self.__compute_gain()
         self.__correct_state(measurements)
         self.__correct_covariance()
+
+
+class KalmanTracker(KalmanFilter):
+    """
+        As a first test, track the four corners of the reference surface.
+        This means that we have 16 states (2 pos, 2 vels for each corner)
+        Dimensions are then:
+        x -> 16 x 1 (States - 4 corners (u, v) and its velocities (u', v') => 16 values)
+        z -> 8 x 1 (Observations - 4 corners => 8 values)
+        A -> 16 x 16 (State transition model)
+        H -> 8 x 16 (Observation model)
+        P -> 16 x 16 (Error covariance)
+        Q -> 16 x 16 (Process noise covariance)
+        R -> 8 x 8 (Observation noise covariance)
+        K -> 16 x 8 (Kalman Gain)
+    """
+    def __init__(self):
+        super().__init__(self.get_A(dt=0), self.get_H(), self.get_Q(), self.get_R())
+
+    def get_A(self, dt):
+        return np.eye(16) + np.diag(np.ones(8), 8)*dt  # 16x16
+
+    def get_H(self):
+        return np.concatenate((np.eye(8), np.zeros([8, 8])), 1)  # 8x16
+
+    def get_Q(self):
+        return np.zeros(16)  # 16x16
+
+    def get_R(self, r=0.5):
+        return np.eye(8) * r**2  # 8x8
