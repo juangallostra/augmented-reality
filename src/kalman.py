@@ -125,10 +125,10 @@ class KalmanTracker(KalmanFilter):
     def get_H(self):
         return np.concatenate((np.eye(8), np.zeros([8, 8])), 1)  # 8x16
 
-    def get_Q(self, q=0.1):
+    def get_Q(self, q=0.5):
         a = np.eye(8)*q**2
         b = np.zeros([8, 8])
         return np.block([[b, b],[b, a]])  # 16x16
 
-    def get_R(self, r=0.2):
+    def get_R(self, r=0.5):
         return np.eye(8) * r**2  # 8x8

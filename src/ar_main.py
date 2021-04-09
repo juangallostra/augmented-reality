@@ -48,6 +48,7 @@ def main():
     # Set to False if you don't want the filter to be active
     FILTERING = True
     # selector('reference/model.jpg')
+    frame_2 = None
 
     homography = None 
     # matrix of camera parameters (made up but works quite well for me) 
@@ -99,7 +100,7 @@ def main():
                     measured_corners = dst.flatten() # initial position state or measurments
                     if FIRST_ITERATION:
                         state = np.concatenate([measured_corners, np.zeros(8)])
-                        covariance_matrix = np.eye(16)*0.7 # TODO: Revisit values
+                        covariance_matrix = np.eye(16)*0.5 # TODO: Revisit values
                         kalman_filter.init(state, covariance_matrix)
                         last_time = time.time()
                         FIRST_ITERATION = False
@@ -114,7 +115,8 @@ def main():
                     new_dest = kalman_filter.get_current_state()[0:8].reshape(-1,1,2)
                     new_homography, new_mask = cv2.findHomography(pts,new_dest, cv2.RANSAC, 5.0)
                     dst_2 = cv2.perspectiveTransform(pts, new_homography)
-                    frame = cv2.polylines(frame, [np.int32(dst_2)], True, 0, 3, cv2.LINE_AA)
+                    frame_2 = frame.copy()
+                    frame_2 = cv2.polylines(frame_2, [np.int32(dst_2)], True, 0, 3, cv2.LINE_AA)
                 # connect them with lines  
                 frame = cv2.polylines(frame, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)  
             # if a valid homography matrix was found render cube on model plane
@@ -124,8 +126,9 @@ def main():
                     projection = projection_matrix(camera_parameters, homography)
                     proj_2 = projection_matrix(camera_parameters, new_homography) 
                     # project cube or model
-                    # frame = render(frame, obj, projection, model, False)
-                    frame = render(frame, obj, proj_2, model, False)
+                    frame = render(frame, obj, projection, model, False)
+                    frame_2 = render(frame_2, obj, proj_2, model, False)
+                    both = np.concatenate((frame, frame_2), axis=1)
                     #frame = render(frame, model, projection)
                 except:
                     pass
@@ -133,7 +136,8 @@ def main():
             if args.matches:
                 frame = cv2.drawMatches(model, kp_model, frame, kp_frame, matches[:10], 0, flags=2)
             # show result
-            cv2.imshow('frame', frame)
+            # cv2.imshow('frame', frame)
+            cv2.imshow('frame', both)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
