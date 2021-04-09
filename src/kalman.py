@@ -62,24 +62,18 @@ class KalmanFilter(ABC):
     def __project_covariance(self):
         """ P_k = A*P_(k-1)*A' + Q """
         self.P = np.matmul(
-            np.matmul(self._A, self.P),
+            np.matmul(self._A, self.P), 
             np.transpose(self._A)
         ) + self._Q
 
     def __compute_gain(self):
         """ K_k = P_k*H'*(H*P_K*H' + R)^-1 """
         self.K = np.matmul(
-            np.matmul(
-                self.P,
-                np.transpose(self._H)
-            ),
+            np.matmul(self.P, np.transpose(self._H)),
             np.linalg.inv(
                 np.matmul(
                     self._H,
-                    np.matmul(
-                        self.P,
-                        np.transpose(self._H)
-                    )
+                    np.matmul(self.P,np.transpose(self._H))
                 ) + self._R
             )
         )
