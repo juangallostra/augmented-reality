@@ -99,7 +99,7 @@ def main():
                     measured_corners = dst.flatten() # initial position state or measurments
                     if FIRST_ITERATION:
                         state = np.concatenate([measured_corners, np.zeros(8)])
-                        covariance_matrix = np.eye(16)*1000.01 # TODO: Revisit values
+                        covariance_matrix = np.eye(16)*0.7 # TODO: Revisit values
                         kalman_filter.init(state, covariance_matrix)
                         last_time = time.time()
                         FIRST_ITERATION = False
@@ -121,9 +121,11 @@ def main():
             if homography is not None:
                 try:
                     # obtain 3D projection matrix from homography matrix and camera parameters
-                    projection = projection_matrix(camera_parameters, homography)  
+                    projection = projection_matrix(camera_parameters, homography)
+                    proj_2 = projection_matrix(camera_parameters, new_homography) 
                     # project cube or model
-                    frame = render(frame, obj, projection, model, False)
+                    # frame = render(frame, obj, projection, model, False)
+                    frame = render(frame, obj, proj_2, model, False)
                     #frame = render(frame, model, projection)
                 except:
                     pass
