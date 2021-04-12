@@ -24,19 +24,19 @@ class KalmanFilter(ABC):
         return self.P
 
     @abstractmethod
-    def get_A(self):
+    def get_A(self, **kwargs):
         pass
 
     @abstractmethod
-    def get_H(self):
+    def get_H(self, **kwargs):
         pass
 
     @abstractmethod
-    def get_Q(self):
+    def get_Q(self, **kwargs):
         pass
 
     @abstractmethod
-    def get_R(self):
+    def get_R(self, **kwargs):
         pass
 
     def reset(self):
