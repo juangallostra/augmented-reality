@@ -48,7 +48,7 @@ def main():
     # Set to False if you don't want the filter to be active
     FILTERING = True
     # selector('reference/model.jpg')
-    frame_2 = None
+    kalman_frame = None
 
     homography = None 
     # matrix of camera parameters (made up but works quite well for me) 
@@ -112,11 +112,11 @@ def main():
                         kalman_filter.correct(measured_corners)
                         last_time = current_time
                     # recompute homography
-                    new_dest = kalman_filter.get_current_state()[0:8].reshape(-1,1,2)
-                    new_homography, new_mask = cv2.findHomography(pts,new_dest, cv2.RANSAC, 5.0)
-                    dst_2 = cv2.perspectiveTransform(pts, new_homography)
-                    frame_2 = frame.copy()
-                    frame_2 = cv2.polylines(frame_2, [np.int32(dst_2)], True, 0, 3, cv2.LINE_AA)
+                    kalman_estimated_corners = kalman_filter.get_current_state()[0:8].reshape(-1,1,2)
+                    kalman_homography, kalman_mask = cv2.findHomography(pts, kalman_estimated_corners, cv2.RANSAC, 5.0)
+                    kalman_frame = frame.copy()
+                    kalman_projected_corners = cv2.perspectiveTransform(pts, kalman_homography)
+                    kalman_frame = cv2.polylines(kalman_frame, [np.int32(kalman_projected_corners)], True, 0, 3, cv2.LINE_AA)
                 # connect them with lines  
                 frame = cv2.polylines(frame, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)  
             # if a valid homography matrix was found render cube on model plane
@@ -124,11 +124,11 @@ def main():
                 try:
                     # obtain 3D projection matrix from homography matrix and camera parameters
                     projection = projection_matrix(camera_parameters, homography)
-                    proj_2 = projection_matrix(camera_parameters, new_homography) 
+                    proj_2 = projection_matrix(camera_parameters, kalman_homography) 
                     # project cube or model
                     frame = render(frame, obj, projection, model, False)
-                    frame_2 = render(frame_2, obj, proj_2, model, False)
-                    both = np.concatenate((frame, frame_2), axis=1)
+                    kalman_frame = render(kalman_frame, obj, proj_2, model, False)
+                    both = np.concatenate((frame, kalman_frame), axis=1)
                     #frame = render(frame, model, projection)
                 except:
                     pass
