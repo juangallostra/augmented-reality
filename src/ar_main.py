@@ -108,7 +108,7 @@ def main():
                         # predict and correct
                         current_time = time.time()
                         deltat = current_time - last_time
-                        kalman_filter.predict(deltat)
+                        kalman_filter.predict(dt=deltat)
                         kalman_filter.correct(measured_corners)
                         last_time = current_time
                     # recompute homography

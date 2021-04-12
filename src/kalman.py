@@ -48,12 +48,12 @@ class KalmanFilter(ABC):
         self.x = x
         self.P = P
 
-    def __update_models_and_noise(self, deltat):
+    def __update_models_and_noise(self, **kwargs):
         """ If any of the models has to be updated with some data, do it here"""
-        self._A = self.get_A(deltat)
-        self._H = self.get_H()
-        self._Q = self.get_Q()
-        self._R = self.get_R()
+        self._A = self.get_A(**kwargs)
+        self._H = self.get_H(**kwargs)
+        self._Q = self.get_Q(**kwargs)
+        self._R = self.get_R(**kwargs)
 
     def __project_state(self):
         """ x_k = A*x_(k-1) + B*u_k"""
@@ -89,9 +89,9 @@ class KalmanFilter(ABC):
         """ P_k = (I - K_k*H)*P_k """
         self.P = np.matmul(np.eye(16) - np.matmul(self.K, self._H), self.P)
 
-    def predict(self, deltat):
+    def predict(self, **kwargs):
         """ Prediction step """
-        self.__update_models_and_noise(deltat)
+        self.__update_models_and_noise(**kwargs)
         self.__project_state()
         self.__project_covariance()
 
@@ -119,16 +119,16 @@ class KalmanTracker(KalmanFilter):
     def __init__(self):
         super().__init__()
 
-    def get_A(self, dt):
+    def get_A(self, dt=None):
         return np.eye(16) + np.diag(np.ones(8), 8)*dt  # 16x16
 
-    def get_H(self):
+    def get_H(self, **kwargs):
         return np.concatenate((np.eye(8), np.zeros([8, 8])), 1)  # 8x16
 
-    def get_Q(self, q=0.5):
+    def get_Q(self, q=0.5, **kwargs):
         a = np.eye(8)*q**2
         b = np.zeros([8, 8])
         return np.block([[b, b],[b, a]])  # 16x16
 
-    def get_R(self, r=0.5):
+    def get_R(self, r=0.5, **kwargs):
         return np.eye(8) * r**2  # 8x8
