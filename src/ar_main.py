@@ -23,7 +23,7 @@ from corner_select import selector
 # Minimum number of matches that have to be found
 # to consider the recognition valid
 MIN_MATCHES = 10
-PERCENT = 50
+PERCENT = 35
 DEFAULT_COLOR = (0, 0, 0)
 
 def rescale_frame(frame, percent=100):
@@ -128,7 +128,7 @@ def main():
                     # project cube or model
                     frame = render(frame, obj, projection, model, False)
                     kalman_frame = render(kalman_frame, obj, proj_2, model, False)
-                    both = np.concatenate((frame, kalman_frame), axis=1)
+                    both = np.concatenate((frame, kalman_frame), axis=0)
                     #frame = render(frame, model, projection)
                 except:
                     pass
