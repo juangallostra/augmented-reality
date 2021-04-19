@@ -100,7 +100,7 @@ def main():
                     measured_corners = dst.flatten() # initial position state or measurments
                     if FIRST_ITERATION:
                         state = np.concatenate([measured_corners, np.zeros(8)])
-                        covariance_matrix = np.eye(16)*0.5 # TODO: Revisit values
+                        covariance_matrix = np.eye(16)*0.8 # TODO: Revisit values
                         kalman_filter.init(state, covariance_matrix)
                         last_time = time.time()
                         FIRST_ITERATION = False
@@ -212,14 +212,14 @@ def hex_to_rgb(hex_color):
 
 # Command line argument parsing
 # NOT ALL OF THEM ARE SUPPORTED YET
-parser = argparse.ArgumentParser(description='Augmented reality application')
+parser = argparse.ArgumentParser(description='Augmented reality demo')
 
 parser.add_argument('-r','--rectangle', help = 'draw rectangle delimiting target surface on frame', action = 'store_true')
-parser.add_argument('-mk','--model_keypoints', help = 'draw model keypoints', action = 'store_true')
-parser.add_argument('-fk','--frame_keypoints', help = 'draw frame keypoints', action = 'store_true')
-parser.add_argument('-ma','--matches', help = 'draw matches between keypoints', action = 'store_true')
+parser.add_argument('-k','--keypoints', help = 'draw frame and model keypoints', action = 'store_true')
+parser.add_argument('-m','--matches', help = 'draw matches between keypoints', action = 'store_true')
 # TODO jgallostraa -> add support for model specification
-#parser.add_argument('-mo','--model', help = 'Specify model to be projected', action = 'store_true')
+parser.add_argument('-f', '--filtering')
+# parser.add_argument('-mo','--model', help = 'Specify model to be projected', action = 'store_true')
 
 args = parser.parse_args()
 
