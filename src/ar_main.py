@@ -45,8 +45,6 @@ def main():
     last_time = 0
     # Flag to initialize the kalman filter
     FIRST_ITERATION = True
-    # Set to False if you don't want the filter to be active
-    FILTERING = True
     # selector('reference/model.jpg')
     kalman_frame = None
 
@@ -90,13 +88,13 @@ def main():
             dst_pts = np.float32([kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
             # compute Homography
             homography, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-            if args.rectangle or FILTERING:
+            if args.rectangle or args.filtering:
                 # Draw a rectangle that marks the found model in the frame
                 h, w = model.shape
                 pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
                 # project corners into frame
                 dst = cv2.perspectiveTransform(pts, homography)
-                if FILTERING:
+                if args.filtering:
                     measured_corners = dst.flatten() # initial position state or measurments
                     if FIRST_ITERATION:
                         state = np.concatenate([measured_corners, np.zeros(8)])
@@ -124,11 +122,12 @@ def main():
                 try:
                     # obtain 3D projection matrix from homography matrix and camera parameters
                     projection = projection_matrix(camera_parameters, homography)
-                    proj_2 = projection_matrix(camera_parameters, kalman_homography) 
                     # project cube or model
                     frame = render(frame, obj, projection, model, False)
-                    kalman_frame = render(kalman_frame, obj, proj_2, model, False)
-                    both = np.concatenate((frame, kalman_frame), axis=0)
+                    if args.filtering:
+                        proj_kalman = projection_matrix(camera_parameters, kalman_homography) 
+                        kalman_frame = render(kalman_frame, obj, proj_kalman, model, False)
+                        both = np.concatenate((frame, kalman_frame), axis=0)
                     #frame = render(frame, model, projection)
                 except:
                     pass
@@ -137,7 +136,9 @@ def main():
                 frame = cv2.drawMatches(model, kp_model, frame, kp_frame, matches[:10], 0, flags=2)
             # show result
             # cv2.imshow('frame', frame)
-            cv2.imshow('frame', both)
+            if args.filtering:
+                frame = both.copy()
+            cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
@@ -214,11 +215,11 @@ def hex_to_rgb(hex_color):
 # NOT ALL OF THEM ARE SUPPORTED YET
 parser = argparse.ArgumentParser(description='Augmented reality demo')
 
-parser.add_argument('-r','--rectangle', help = 'draw rectangle delimiting target surface on frame', action = 'store_true')
-parser.add_argument('-k','--keypoints', help = 'draw frame and model keypoints', action = 'store_true')
-parser.add_argument('-m','--matches', help = 'draw matches between keypoints', action = 'store_true')
+parser.add_argument('-r','--rectangle', help='draw rectangle delimiting target surface on frame', action='store_true')
+parser.add_argument('-k','--keypoints', help='draw frame and model keypoints', action='store_true')
+parser.add_argument('-m','--matches', help='draw matches between keypoints', action='store_true')
 # TODO jgallostraa -> add support for model specification
-parser.add_argument('-f', '--filtering')
+parser.add_argument('-f', '--filtering', help='filter output via a Kalman filter', action='store_true')
 # parser.add_argument('-mo','--model', help = 'Specify model to be projected', action = 'store_true')
 
 args = parser.parse_args()
