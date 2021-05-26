@@ -6,6 +6,7 @@ class KalmanFilter(ABC):
     """
     Generic Kalman Filter implementation
     """
+
     def __init__(self):
         # Variables to store the current state of the Kalman filter
         self.x = None  # Predicted state
@@ -62,7 +63,7 @@ class KalmanFilter(ABC):
     def __project_covariance(self):
         """ P_k = A*P_(k-1)*A' + Q """
         self.P = np.matmul(
-            np.matmul(self._A, self.P), 
+            np.matmul(self._A, self.P),
             np.transpose(self._A)
         ) + self._Q
 
@@ -73,7 +74,7 @@ class KalmanFilter(ABC):
             np.linalg.inv(
                 np.matmul(
                     self._H,
-                    np.matmul(self.P,np.transpose(self._H))
+                    np.matmul(self.P, np.transpose(self._H))
                 ) + self._R
             )
         )
@@ -116,6 +117,7 @@ class KalmanTracker(KalmanFilter):
         R -> 8 x 8 (Observation noise covariance)
         K -> 16 x 8 (Kalman Gain)
     """
+
     def __init__(self):
         super().__init__()
 
@@ -128,7 +130,7 @@ class KalmanTracker(KalmanFilter):
     def get_Q(self, q=0.3, **kwargs):
         a = np.eye(8)*q**2
         b = np.zeros([8, 8])
-        return np.block([[b, b],[b, a]])  # 16x16
+        return np.block([[b, b], [b, a]])  # 16x16
 
     def get_R(self, r=0.6, **kwargs):
         return np.eye(8) * r**2  # 8x8
