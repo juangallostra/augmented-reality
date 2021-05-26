@@ -8,13 +8,13 @@
 #      -> Refactor and organize code (proper funcition definition and separation, classes, error handling...)
 
 import argparse
-
 import time
+import math
+import os
+import csv
 
 import cv2
 import numpy as np
-import math
-import os
 from objloader_simple import *
 
 from kalman import KalmanTracker
@@ -37,6 +37,20 @@ def rescale_frame(frame, percent=100):
     height = int(frame.shape[0] * percent / 100)
     return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
+def save_data(file, header, data):
+    with open(file, 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        for row in data:
+            writer.writerow(row)
+
+def get_projected_corners(dst):
+    # tl, bl, br, tr
+    tl_x = dst[0][0][0]; tl_y = dst[0][0][1] 
+    bl_x = dst[1][0][0]; bl_y = dst[1][0][1] 
+    br_x = dst[2][0][0]; br_y = dst[2][0][1] 
+    tr_x = dst[3][0][0]; tr_y = dst[3][0][1]
+    return [tl_x, tl_y, tr_x, tr_y, bl_x, bl_y, br_x, br_y]
 
 def main():
     """
@@ -67,99 +81,138 @@ def main():
     # cap = cv2.VideoCapture(0) # From camera
     cap = cv2.VideoCapture('IMG_5609.mp4')  # From video
 
+    current_frame_index = 1 # for indexing stored data
+    data_headers = [
+        'frame', 
+        'matches',
+        # 'cx',
+        # 'cy',
+        'tl_x',
+        'tl_y',
+        'tr_x',
+        'tr_y',
+        'bl_x',
+        'bl_y',
+        'br_x',
+        'br_y'
+    ]
+    if args.filtering:
+        data_headers += ['ktl_x', 'ktl_y', 'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
+    data_to_save = []
+
     while True:
         # read the current frame
-        ret, frame = cap.read()
-        frame = rescale_frame(frame, percent=PERCENT)
-        if not ret:
-            print("Unable to capture video")
-            return
-        # find and draw the keypoints of the frame
-        kp_frame, des_frame = orb.detectAndCompute(frame, None)
-        # match frame descriptors with model descriptors
-        matches = bf.match(des_model, des_frame)
-        # sort them in the order of their distance
-        # the lower the distance, the better the match
-        matches = sorted(matches, key=lambda x: x.distance)
+        try:
+            ret, frame = cap.read()
+            frame = rescale_frame(frame, percent=PERCENT)
+            if not ret:
+                print("Unable to capture video")
+                return
+            # find and draw the keypoints of the frame
+            kp_frame, des_frame = orb.detectAndCompute(frame, None)
+            # match frame descriptors with model descriptors
+            matches = bf.match(des_model, des_frame)
+            # sort them in the order of their distance
+            # the lower the distance, the better the match
+            matches = sorted(matches, key=lambda x: x.distance)
 
-        # compute Homography if enough matches are found
-        if len(matches) > MIN_MATCHES:
-            # differenciate between source points and destination points
-            src_pts = np.float32(
-                [kp_model[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-            dst_pts = np.float32(
-                [kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
-            # compute Homography
-            homography, mask = cv2.findHomography(
-                src_pts, dst_pts, cv2.RANSAC, 5.0)
-            if args.rectangle or args.filtering:
-                # Draw a rectangle that marks the found model in the frame
-                h, w = model.shape
-                pts = np.float32(
-                    [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
-                # project corners into frame
-                dst = cv2.perspectiveTransform(pts, homography)
-                if args.filtering:
-                    measured_corners = dst.flatten()  # initial position state or measurments
-                    if FIRST_ITERATION:
-                        state = np.concatenate([measured_corners, np.zeros(8)])
-                        covariance_matrix = np.eye(
-                            16)*0.8  # TODO: Revisit values
-                        kalman_filter.init(state, covariance_matrix)
-                        last_time = time.time()
-                        FIRST_ITERATION = False
-                    else:
-                        # predict and correct
-                        current_time = time.time()
-                        deltat = current_time - last_time
-                        kalman_filter.predict(dt=deltat)
-                        kalman_filter.correct(measured_corners)
-                        last_time = current_time
-                    # recompute homography
-                    kalman_estimated_corners = kalman_filter.get_current_state()[
-                        0:8].reshape(-1, 1, 2)
-                    kalman_homography, kalman_mask = cv2.findHomography(
-                        pts, kalman_estimated_corners, cv2.RANSAC, 5.0)
-                    kalman_frame = frame.copy()
-                    kalman_projected_corners = cv2.perspectiveTransform(
-                        pts, kalman_homography)
-                    kalman_frame = cv2.polylines(kalman_frame, [np.int32(
-                        kalman_projected_corners)], True, 0, 3, cv2.LINE_AA)
-                # connect them with lines
-                frame = cv2.polylines(
-                    frame, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
-            # if a valid homography matrix was found render cube on model plane
-            if homography is not None:
-                try:
-                    # obtain 3D projection matrix from homography matrix and camera parameters
-                    projection = projection_matrix(
-                        camera_parameters, homography)
-                    # project cube or model
-                    frame = render(frame, obj, projection, model, False)
+            # compute Homography if enough matches are found
+            if len(matches) > MIN_MATCHES:
+                # differenciate between source points and destination points
+                src_pts = np.float32(
+                    [kp_model[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+                dst_pts = np.float32(
+                    [kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+                # compute Homography
+                homography, _ = cv2.findHomography(
+                    src_pts, dst_pts, cv2.RANSAC, 5.0)
+                if args.rectangle or args.filtering or args.save:
+                    # Draw a rectangle that marks the found model in the frame
+                    h, w = model.shape
+                    # tl, bl, br, tr
+                    pts = np.float32(
+                        [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+                    # project corners into frame
+                    dst = cv2.perspectiveTransform(pts, homography)
+
+                    # SAVE DATA
+                    current_frame_data = [current_frame_index, len(matches), *get_projected_corners(dst)]
+                    current_frame_index += 1
+
                     if args.filtering:
-                        proj_kalman = projection_matrix(
-                            camera_parameters, kalman_homography)
-                        kalman_frame = render(
-                            kalman_frame, obj, proj_kalman, model, False)
-                        both = np.concatenate((frame, kalman_frame), axis=0)
-                    #frame = render(frame, model, projection)
-                except:
-                    pass
-            # draw first 10 matches.
-            if args.matches:
-                frame = cv2.drawMatches(
-                    model, kp_model, frame, kp_frame, matches[:10], 0, flags=2)
-            # show result
-            # cv2.imshow('frame', frame)
-            if args.filtering:
-                frame = both.copy()
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                        measured_corners = dst.flatten()  # initial position state or measurments
+                        if FIRST_ITERATION:
+                            state = np.concatenate([measured_corners, np.zeros(8)])
+                            # TODO: Revisit values
+                            covariance_matrix = np.eye(16)*0.8 
+                            kalman_filter.init(state, covariance_matrix)
+                            last_time = time.time()
+                            FIRST_ITERATION = False
+                        else:
+                            # predict and correct
+                            current_time = time.time()
+                            deltat = current_time - last_time
+                            kalman_filter.predict(dt=deltat)
+                            kalman_filter.correct(measured_corners)
+                            last_time = current_time
+                        # recompute homography
+                        kalman_estimated_corners = kalman_filter.get_current_state()[
+                            0:8].reshape(-1, 1, 2)
+                        kalman_homography, _ = cv2.findHomography(
+                            pts, kalman_estimated_corners, cv2.RANSAC, 5.0)
+                        kalman_frame = frame.copy()
+                        kalman_projected_corners = cv2.perspectiveTransform(
+                            pts, kalman_homography)
+                        kalman_frame = cv2.polylines(kalman_frame, [np.int32(
+                            kalman_projected_corners)], True, 0, 3, cv2.LINE_AA)
+                        
+                        if args.save:
+                            k_corners = get_projected_corners(kalman_projected_corners)
+                            data_to_save.append(current_frame_data + k_corners)
+                        else:
+                            data_to_save.append(current_frame_data)
+                    # connect them with lines
+                    frame = cv2.polylines(
+                        frame, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
+                # if a valid homography matrix was found render cube on model plane
+                if homography is not None:
+                    try:
+                        # obtain 3D projection matrix from homography matrix and camera parameters
+                        projection = projection_matrix(
+                            camera_parameters, homography)
+                        # project cube or model
+                        frame = render(frame, obj, projection, model, False)
+                        if args.filtering:
+                            proj_kalman = projection_matrix(
+                                camera_parameters, kalman_homography)
+                            kalman_frame = render(
+                                kalman_frame, obj, proj_kalman, model, False)
+                            both = np.concatenate((frame, kalman_frame), axis=0)
+                        #frame = render(frame, model, projection)
+                    except:
+                        pass
 
-        else:
-            print("Not enough matches found - %d/%d" %
-                  (len(matches), MIN_MATCHES))
+                # draw first 10 matches.
+                if args.matches:
+                    frame = cv2.drawMatches(
+                        model, kp_model, frame, kp_frame, matches[:10], 0, flags=2)
+                
+                # show result
+                if args.filtering:
+                    frame = both.copy()
+
+                cv2.imshow('frame', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+            else:
+                print("Not enough matches found - %d/%d" %
+                    (len(matches), MIN_MATCHES))
+        except:
+            break
+
+    if args.save:
+        save_data('data.csv', data_headers, data_to_save)
 
     cap.release()
     cv2.destroyAllWindows()
@@ -234,19 +287,39 @@ def hex_to_rgb(hex_color):
 
 # Command line argument parsing
 # NOT ALL OF THEM ARE SUPPORTED YET
-parser = argparse.ArgumentParser(description='Augmented reality demo')
-
-parser.add_argument('-r', '--rectangle',
-                    help='draw rectangle delimiting target surface on frame', action='store_true')
-parser.add_argument('-k', '--keypoints',
-                    help='draw frame and model keypoints', action='store_true')
-parser.add_argument('-m', '--matches',
-                    help='draw matches between keypoints', action='store_true')
 # TODO jgallostraa -> add support for model specification
-parser.add_argument('-f', '--filtering',
-                    help='filter output via a Kalman filter', action='store_true')
+parser = argparse.ArgumentParser(description='Augmented reality demo')
+parser.add_argument(
+    '-r', 
+    '--rectangle',
+    help='draw rectangle delimiting target surface on frame', 
+    action='store_true'
+)
+parser.add_argument(
+    '-k', 
+    '--keypoints',
+    help='draw frame and model keypoints', 
+    action='store_true'
+)
+parser.add_argument(
+    '-m', 
+    '--matches',
+    help='draw matches between keypoints', 
+    action='store_true'
+)
+parser.add_argument(
+    '-f', 
+    '--filtering',
+    help='filter output via a Kalman filter', 
+    action='store_true'
+)
+parser.add_argument(
+    '-s', 
+    '--save',
+    help='Save position estimation data', 
+    action='store_true'
+)
 # parser.add_argument('-mo','--model', help = 'Specify model to be projected', action = 'store_true')
-
 args = parser.parse_args()
 
 if __name__ == '__main__':
