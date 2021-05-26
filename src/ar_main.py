@@ -45,6 +45,23 @@ def save_data(file, header, data):
             writer.writerow(row)
 
 def get_projected_corners(dst):
+    """
+    Extract the coordinates of the four reference surface corners' and return
+    them as a list. The mapping between list elements and corner coordinates is
+    depicted in the diagram below.
+
+     --------------
+    |(0,1) -- (2,3)|
+    |         /    |
+    |        /     |
+    |       /      |
+    |      /       |
+    |     /        |
+    |    /         |
+    |(4,5) -- (6,7)|
+     --------------
+
+    """
     # tl, bl, br, tr
     tl_x = dst[0][0][0]; tl_y = dst[0][0][1] 
     bl_x = dst[1][0][0]; bl_y = dst[1][0][1] 
