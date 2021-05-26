@@ -26,8 +26,6 @@ printed to your terminal, the most likely cause is that your OpenCV installation
 
 **If you get the error**:
 
-This should no longer be an issue after this [commit](https://github.com/juangallostra/augmented-reality/commit/58e00acd18687323e0ddad7c80234a81693ac03f)
-
 ```
 Traceback (most recent call last):
 File "src/ar_main.py", line 174, in
@@ -38,7 +36,10 @@ File "[...]/augmented-reality/src/objloader_simple.py", line 16, in init
 v = v[0], v[2], v[1]
 TypeError: 'map' object is not subscriptable
 ```
+
 The most likely cause is that you are trying to execute the code with Python 3 and the code is written in Python 2. The `map` function in Python 3 returns an iterable object of type map, and not a subscriptible list. To fix it, change the calls to `map()` by `list(map())` on lines 14, 19 and 24 of `src/objloader_simple.py`. 
+
+**Update**: This should no longer be an issue after this [commit](https://github.com/juangallostra/augmented-reality/commit/58e00acd18687323e0ddad7c80234a81693ac03f)
 
 ## Explanation
 
