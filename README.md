@@ -26,6 +26,8 @@ printed to your terminal, the most likely cause is that your OpenCV installation
 
 **If you get the error**:
 
+This should no longer be an issue after this [commit](https://github.com/juangallostra/augmented-reality/commit/58e00acd18687323e0ddad7c80234a81693ac03f)
+
 ```
 Traceback (most recent call last):
 File "src/ar_main.py", line 174, in
