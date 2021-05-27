@@ -38,6 +38,9 @@ def rescale_frame(frame, percent=100):
     return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
 def save_data(file, header, data):
+    """
+    Save measured data in a CSV file
+    """
     with open(file, 'w', encoding='UTF8') as f:
         writer = csv.writer(f)
         writer.writerow(header)
@@ -102,8 +105,8 @@ def main():
     data_headers = [
         'frame', 
         'matches',
-        # 'cx',
-        # 'cy',
+        'cx',
+        'cy',
         'tl_x',
         'tl_y',
         'tr_x',
@@ -114,7 +117,7 @@ def main():
         'br_y'
     ]
     if args.filtering:
-        data_headers += ['ktl_x', 'ktl_y', 'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
+        data_headers += ['kcx', 'kcy', 'ktl_x', 'ktl_y', 'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
     data_to_save = []
 
     while True:
@@ -149,11 +152,12 @@ def main():
                     # tl, bl, br, tr
                     pts = np.float32(
                         [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+                    center_pts = np.float32([[w/2, h/2]]).reshape(-1, 1, 2)
                     # project corners into frame
                     dst = cv2.perspectiveTransform(pts, homography)
-
+                    p_center_pts = cv2.perspectiveTransform(center_pts, homography)
                     # SAVE DATA
-                    current_frame_data = [current_frame_index, len(matches), *get_projected_corners(dst)]
+                    current_frame_data = [current_frame_index, len(matches), *p_center_pts[0][0], *get_projected_corners(dst)]
                     current_frame_index += 1
 
                     if args.filtering:
@@ -184,9 +188,10 @@ def main():
                             kalman_projected_corners)], True, 0, 3, cv2.LINE_AA)
                         
                         if args.save:
+                            k_center = cv2.perspectiveTransform(center_pts, kalman_homography)
                             k_corners = get_projected_corners(kalman_projected_corners)
-                            data_to_save.append(current_frame_data + k_corners)
-                        else:
+                            data_to_save.append(current_frame_data + list(k_center[0][0]) + k_corners)
+                        else: # ?
                             data_to_save.append(current_frame_data)
                     # connect them with lines
                     frame = cv2.polylines(
