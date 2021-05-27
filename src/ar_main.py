@@ -37,6 +37,7 @@ def rescale_frame(frame, percent=100):
     height = int(frame.shape[0] * percent / 100)
     return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
+
 def save_data(file, header, data):
     """
     Save measured data in a CSV file
@@ -46,6 +47,7 @@ def save_data(file, header, data):
         writer.writerow(header)
         for row in data:
             writer.writerow(row)
+
 
 def get_projected_corners(dst):
     """
@@ -66,11 +68,16 @@ def get_projected_corners(dst):
 
     """
     # tl, bl, br, tr
-    tl_x = dst[0][0][0]; tl_y = dst[0][0][1] 
-    bl_x = dst[1][0][0]; bl_y = dst[1][0][1] 
-    br_x = dst[2][0][0]; br_y = dst[2][0][1] 
-    tr_x = dst[3][0][0]; tr_y = dst[3][0][1]
+    tl_x = dst[0][0][0]
+    tl_y = dst[0][0][1]
+    bl_x = dst[1][0][0]
+    bl_y = dst[1][0][1]
+    br_x = dst[2][0][0]
+    br_y = dst[2][0][1]
+    tr_x = dst[3][0][0]
+    tr_y = dst[3][0][1]
     return [tl_x, tl_y, tr_x, tr_y, bl_x, bl_y, br_x, br_y]
+
 
 def main():
     """
@@ -101,9 +108,9 @@ def main():
     # cap = cv2.VideoCapture(0) # From camera
     cap = cv2.VideoCapture('IMG_5609.mp4')  # From video
 
-    current_frame_index = 1 # for indexing stored data
+    current_frame_index = 1  # for indexing stored data
     data_headers = [
-        'frame', 
+        'frame',
         'matches',
         'cx',
         'cy',
@@ -117,7 +124,8 @@ def main():
         'br_y'
     ]
     if args.filtering:
-        data_headers += ['kcx', 'kcy', 'ktl_x', 'ktl_y', 'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
+        data_headers += ['kcx', 'kcy', 'ktl_x', 'ktl_y',
+                         'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
     data_to_save = []
 
     while True:
@@ -155,17 +163,20 @@ def main():
                     center_pts = np.float32([[w/2, h/2]]).reshape(-1, 1, 2)
                     # project corners into frame
                     dst = cv2.perspectiveTransform(pts, homography)
-                    p_center_pts = cv2.perspectiveTransform(center_pts, homography)
+                    p_center_pts = cv2.perspectiveTransform(
+                        center_pts, homography)
                     # SAVE DATA
-                    current_frame_data = [current_frame_index, len(matches), *p_center_pts[0][0], *get_projected_corners(dst)]
+                    current_frame_data = [current_frame_index, len(
+                        matches), *p_center_pts[0][0], *get_projected_corners(dst)]
                     current_frame_index += 1
 
                     if args.filtering:
                         measured_corners = dst.flatten()  # initial position state or measurments
                         if FIRST_ITERATION:
-                            state = np.concatenate([measured_corners, np.zeros(8)])
+                            state = np.concatenate(
+                                [measured_corners, np.zeros(8)])
                             # TODO: Revisit values
-                            covariance_matrix = np.eye(16)*0.8 
+                            covariance_matrix = np.eye(16)*0.8
                             kalman_filter.init(state, covariance_matrix)
                             last_time = time.time()
                             FIRST_ITERATION = False
@@ -186,12 +197,15 @@ def main():
                             pts, kalman_homography)
                         kalman_frame = cv2.polylines(kalman_frame, [np.int32(
                             kalman_projected_corners)], True, 0, 3, cv2.LINE_AA)
-                        
+
                         if args.save:
-                            k_center = cv2.perspectiveTransform(center_pts, kalman_homography)
-                            k_corners = get_projected_corners(kalman_projected_corners)
-                            data_to_save.append(current_frame_data + list(k_center[0][0]) + k_corners)
-                        else: # ?
+                            k_center = cv2.perspectiveTransform(
+                                center_pts, kalman_homography)
+                            k_corners = get_projected_corners(
+                                kalman_projected_corners)
+                            data_to_save.append(
+                                current_frame_data + list(k_center[0][0]) + k_corners)
+                        else:  # ?
                             data_to_save.append(current_frame_data)
                     # connect them with lines
                     frame = cv2.polylines(
@@ -209,7 +223,8 @@ def main():
                                 camera_parameters, kalman_homography)
                             kalman_frame = render(
                                 kalman_frame, obj, proj_kalman, model, False)
-                            both = np.concatenate((frame, kalman_frame), axis=0)
+                            both = np.concatenate(
+                                (frame, kalman_frame), axis=0)
                         #frame = render(frame, model, projection)
                     except:
                         pass
@@ -218,7 +233,7 @@ def main():
                 if args.matches:
                     frame = cv2.drawMatches(
                         model, kp_model, frame, kp_frame, matches[:10], 0, flags=2)
-                
+
                 # show result
                 if args.filtering:
                     frame = both.copy()
@@ -229,7 +244,7 @@ def main():
 
             else:
                 print("Not enough matches found - %d/%d" %
-                    (len(matches), MIN_MATCHES))
+                      (len(matches), MIN_MATCHES))
         except:
             break
 
@@ -312,33 +327,33 @@ def hex_to_rgb(hex_color):
 # TODO jgallostraa -> add support for model specification
 parser = argparse.ArgumentParser(description='Augmented reality demo')
 parser.add_argument(
-    '-r', 
+    '-r',
     '--rectangle',
-    help='draw rectangle delimiting target surface on frame', 
+    help='draw rectangle delimiting target surface on frame',
     action='store_true'
 )
 parser.add_argument(
-    '-k', 
+    '-k',
     '--keypoints',
-    help='draw frame and model keypoints', 
+    help='draw frame and model keypoints',
     action='store_true'
 )
 parser.add_argument(
-    '-m', 
+    '-m',
     '--matches',
-    help='draw matches between keypoints', 
+    help='draw matches between keypoints',
     action='store_true'
 )
 parser.add_argument(
-    '-f', 
+    '-f',
     '--filtering',
-    help='filter output via a Kalman filter', 
+    help='filter output via a Kalman filter',
     action='store_true'
 )
 parser.add_argument(
-    '-s', 
+    '-s',
     '--save',
-    help='Save position estimation data', 
+    help='Save position estimation data',
     action='store_true'
 )
 # parser.add_argument('-mo','--model', help = 'Specify model to be projected', action = 'store_true')
