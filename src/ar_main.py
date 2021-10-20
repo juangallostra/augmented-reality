@@ -23,18 +23,18 @@ from corner_select import selector
 # Minimum number of matches that have to be found
 # to consider the recognition valid
 MIN_MATCHES = 10
-PERCENT = 35
+SCALE = 35
 DEFAULT_COLOR = (0, 0, 0)
 
 
-def rescale_frame(frame, percent=100):
+def rescale_frame(frame, scale=1):
     """
     Scale a frame by a given percentage
     """
-    if percent == 100:
+    if scale == 1:
         return frame
-    width = int(frame.shape[1] * percent / 100)
-    height = int(frame.shape[0] * percent / 100)
+    width = int(frame.shape[1] * scale)
+    height = int(frame.shape[0] * scale)
     return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
 
@@ -132,7 +132,7 @@ def main():
         # read the current frame
         try:
             ret, frame = cap.read()
-            frame = rescale_frame(frame, percent=PERCENT)
+            frame = rescale_frame(frame, percent=SCALE)
             if not ret:
                 print("Unable to capture video")
                 return
