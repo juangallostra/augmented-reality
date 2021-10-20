@@ -11,73 +11,17 @@ import argparse
 import time
 import math
 import os
-import csv
 
 import cv2
 import numpy as np
-from objloader_simple import *
+from objloader_simple import OBJ
+
+from utils.cv_utils import rescale_frame
+from utils.data_utils import save_data, get_projected_corners
 
 from kalman import KalmanTracker
-from corner_select import selector
-
-# Minimum number of matches that have to be found
-# to consider the recognition valid
-MIN_MATCHES = 10
-SCALE = 35
-DEFAULT_COLOR = (0, 0, 0)
-
-
-def rescale_frame(frame, scale=1):
-    """
-    Scale a frame by a given percentage
-    """
-    if scale == 1:
-        return frame
-    width = int(frame.shape[1] * scale)
-    height = int(frame.shape[0] * scale)
-    return cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
-
-
-def save_data(file, header, data):
-    """
-    Save measured data in a CSV file
-    """
-    with open(file, 'w', encoding='UTF8') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        for row in data:
-            writer.writerow(row)
-
-
-def get_projected_corners(dst):
-    """
-    Extract the coordinates of the four reference surface corners' and return
-    them as a list. The mapping between list elements and corner coordinates is
-    depicted in the diagram below.
-
-     --------------
-    |(0,1) -- (2,3)|
-    |         /    |
-    |        /     |
-    |       /      |
-    |      /       |
-    |     /        |
-    |    /         |
-    |(4,5) -- (6,7)|
-     --------------
-
-    """
-    # tl, bl, br, tr
-    tl_x = dst[0][0][0]
-    tl_y = dst[0][0][1]
-    bl_x = dst[1][0][0]
-    bl_y = dst[1][0][1]
-    br_x = dst[2][0][0]
-    br_y = dst[2][0][1]
-    tr_x = dst[3][0][0]
-    tr_y = dst[3][0][1]
-    return [tl_x, tl_y, tr_x, tr_y, bl_x, bl_y, br_x, br_y]
-
+# from utils.corner_select import selector 
+from constants import DATA_HEADERS, KALMAN_DATA_HEADERS, MIN_MATCHES, SCALE, DEFAULT_COLOR, DATA_FILE
 
 def main():
     """
@@ -109,23 +53,10 @@ def main():
     cap = cv2.VideoCapture('IMG_5609.mp4')  # From video
 
     current_frame_index = 1  # for indexing stored data
-    data_headers = [
-        'frame',
-        'matches',
-        'cx',
-        'cy',
-        'tl_x',
-        'tl_y',
-        'tr_x',
-        'tr_y',
-        'bl_x',
-        'bl_y',
-        'br_x',
-        'br_y'
-    ]
+    data_headers = DATA_HEADERS
     if args.filtering:
-        data_headers += ['kcx', 'kcy', 'ktl_x', 'ktl_y',
-                         'ktr_x', 'ktr_y', 'kbl_x', 'kbl_y', 'kbr_x', 'kbr_y']
+        data_headers += KALMAN_DATA_HEADERS
+
     data_to_save = []
 
     while True:
@@ -165,7 +96,7 @@ def main():
                     dst = cv2.perspectiveTransform(pts, homography)
                     p_center_pts = cv2.perspectiveTransform(
                         center_pts, homography)
-                    # SAVE DATA
+                    # DATA TO SAVE
                     current_frame_data = [current_frame_index, len(
                         matches), *p_center_pts[0][0], *get_projected_corners(dst)]
                     current_frame_index += 1
@@ -249,7 +180,7 @@ def main():
             break
 
     if args.save:
-        save_data('data.csv', data_headers, data_to_save)
+        save_data(DATA_FILE, data_headers, data_to_save)
 
     cap.release()
     cv2.destroyAllWindows()
