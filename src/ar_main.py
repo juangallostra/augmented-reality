@@ -63,7 +63,7 @@ def main():
         # read the current frame
         try:
             ret, frame = cap.read()
-            frame = rescale_frame(frame, percent=SCALE)
+            frame = rescale_frame(frame, scale=SCALE)
             if not ret:
                 print("Unable to capture video")
                 return
