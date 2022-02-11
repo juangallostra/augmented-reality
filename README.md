@@ -44,6 +44,7 @@ See this blog entries for an in-depth explanation of the logic behind the code:
 
 * [Part 1](https://bitesofcode.wordpress.com/2017/09/12/augmented-reality-with-python-and-opencv-part-1/)
 * [Part 2](https://bitesofcode.wordpress.com/2018/09/16/augmented-reality-with-python-and-opencv-part-2/)
+* [Part 3 (Comming soon)](https://bitesofcode.wordpress.com)
 
 ## Results
 

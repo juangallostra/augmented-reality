@@ -20,8 +20,9 @@ from utils.cv_utils import rescale_frame
 from utils.data_utils import save_data, get_projected_corners
 
 from kalman import KalmanTracker
-# from utils.corner_select import selector 
+# from utils.corner_select import selector
 from constants import DATA_HEADERS, KALMAN_DATA_HEADERS, MIN_MATCHES, SCALE, DEFAULT_COLOR, DATA_FILE
+
 
 def main():
     """
